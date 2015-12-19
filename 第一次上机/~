@@ -1,0 +1,30 @@
+#include<iostream>
+using namespace std;
+int main()
+{
+  int cnt;
+  int N;
+  int data[100][100];
+  cin>>cnt;
+  while(cnt--)
+  {
+    cin>>N
+    memset(data,0,sizeof(data));
+    for(int i=0;i<N;i++)
+    {
+       for(int j=0;j<=i;j++)
+       {
+          cin>>data[i][j];
+       }
+    }
+    
+    for(int i=N-2;i>=0;i--)
+    {
+       for(int j=0;j<=i;j++)
+       {
+          data[i][j]=max(data[i][j]+data[i+1][j],data[i][j]+data[i+1][j+1]);
+       }
+    }
+    cout<<data[0][0]<<endl;
+  }
+} 
