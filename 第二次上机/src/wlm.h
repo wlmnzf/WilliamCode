@@ -318,6 +318,11 @@ void my_exitsys()
   fwrite(myvhard,SIZE,1,fp);
   close(fp);
   fp=NULL;
-  //还得撤消用户打开文件列表
+  int i=0;
+  for(i=0;i<MAXOPENFILE;i++)
+  {
+     if(openfilelist[i].topenfile==0)
+         my_close(i);
+  }
   free(myvhard);
 }

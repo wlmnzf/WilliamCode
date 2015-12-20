@@ -103,7 +103,7 @@ void my_mkdir(char *dirname)
     
     
     int fcbNum=res/sizeof(fcb);
-    for(int i=0;i<fcbNum;i++)
+    for(i=0;i<fcbNum;i++)
     {
        if(strcmp(tmp_fcb->filename,dirname)==0&&strcmp(tmp_fcb->exname,exname)==0)
           {
@@ -125,6 +125,8 @@ void my_mkdir(char *dirname)
     int free_block=findFree();
     if(free_block==END) 
 	   return;
+   
+   openfilelist[curfd].length+=1;
    
    
    	time(now);
@@ -149,146 +151,53 @@ void my_mkdir(char *dirname)
 	openfilelist[free_fd].free=1;
 	openfilelist[free_fd].dirno=openfilelist[curfd].first;
 	strcpy(openfilelist[free_fd].dir[free_fd],openfilelist[curfd].dir[curfd]);
+	strcat(openfilelist[free_fd].dir[free_fd],dirname);
+	strcat(openfilelist[free_fd].dir[free_fd],"\\");
 	openfilelist[free_fd].diroff=i;
 	openfilelist[free_fd].count=0;
 	openfilelist[free_fd].fcbstate=1;
 	openfilelist[free_fd].topenfile=1;
 	
+    openfilelist[curfd].length+=1;
+    openfilelist[curfd].count=(openfilelist[curfd].length-1)*sizeof(fcb);
+    res=do_write(curfd,(char *)new_fcb,sizeof(fcb),2);
+    if(res=-1)
+    {
+	   printf("写入文件夹失败\n");
+	   return;
+	}
+	
+	fat *fat1=(fat *)(myvhard+BLOCKSIZE);
+	fat *fat2=(fat *)(myvhard+3*BLOCKSIZE);
+	
+	
+	(fat1+free_block)->id=END;
+	(fat2+free_block)->id=END;
+	
+	new_fcb=(fcb *)malloc(sizeof(fcb));
+	time(now);
+	nowtime=localtime(now);
+    strcpy(new_fcb->filename,".");
+    strcpy(new_fcb->exname,exname);
+    new_fcb->attribute=0;
+	new_fcb->time=nowtime->tm_hour*2048+nowtime->tm_min*32+nowtime->tm_sec/2;
+	new_fcb->date=(nowtime->tm_year-80)*512+(nowtime->tm_mon+1)*32+nowtime->tm_mday;
+	new_fcb->first=free_block;
+	new_fcb->length=0;
+	new_fcb->free =0;
+	
+    res=do_write(free_fd,(char *)new_fcb,sizeof(fcb),2);
+    if(res==-1)
+      return;
+      
+    strcpy(new_fcb->filename,"..");
+    res=do_write(free_fd,(char *)new_fcb,sizeof(fcb),2);
+    if(res==-1)
+      return;
 	//openfilelist[free_fd].father=curfd;    
 
 }
 
-//void my_mkdir(char *dirname)
-//{
-//	fcb *dirfcb,*pcbtmp;
-//	int rbn,i,fd;
-//	unsigned short bknum;
-//	char text[MAX_TXT_SIZE],*p;
-//	time_t *now;
-//	struct tm *nowtime;
-//	/*
-//	将当前的文件信息读到text中
-//	rbn 是实际读取的字节数
-//	*/
-//	openfilelist[curfd].count=0;
-//	rbn = do_read(curfd,openfilelist[curfd].length,text);
-//	dirfcb=(fcb *)text;
-//	/*
-//	检测是否有相同的目录名
-//	*/
-//	for(i=0;i<rbn/sizeof(fcb);i++)
-//	{
-//		if(strcmp(dirname,dirfcb->filename)==0)
-//		{
-//			printf("Error,the dirname is already exist!\n");
-//			return;
-//		}
-//		dirfcb++;
-//	}
-//	
-//	
-//
-//
-//	/*
-//	分配一个空闲的打开文件表项
-//	*/
-//	dirfcb=(fcb *)text;
-//	for(i=0;i<rbn/sizeof(fcb);i++)
-//	{
-//		if(strcmp(dirfcb->filename,"")==0)
-//			break;
-//		dirfcb++;
-//	}
-//	openfilelist[curfd].count=i*sizeof(fcb);
-//	fd=findFreeO();
-//	if(fd<0)
-//	{
-//		return;
-//	}
-//
-//	/*
-//	寻找空闲盘块
-//	*/
-//	bknum = findFree();
-//	if(bknum == END )
-//	{
-//		return;
-//	}
-//
-//	pcbtmp=(fcb *)malloc(sizeof(fcb));
-//	now=(time_t *)malloc(sizeof(time_t));
-//
-//	//在当前目录下新建目录项
-//	pcbtmp->attribute=0;
-//	time(now);
-//	nowtime=localtime(now);
-//	pcbtmp->time=nowtime->tm_hour*2048+nowtime->tm_min*32+nowtime->tm_sec/2;
-//	pcbtmp->date=(nowtime->tm_year-80)*512+(nowtime->tm_mon+1)*32+nowtime->tm_mday;
-//	strcpy(pcbtmp->filename,dirname);
-//	strcpy(pcbtmp->exname,"di");
-//	pcbtmp->first=bknum;
-//	pcbtmp->length=2*sizeof(fcb);
-//
-//	openfilelist[fd].attribute=pcbtmp->attribute;
-//	openfilelist[fd].count=0;
-//	openfilelist[fd].date=pcbtmp->date;
-//	strcpy(openfilelist[fd].dir[fd],openfilelist[curfd].dir[curfd]);
-//
-//	p=openfilelist[fd].dir[fd];
-//	while(*p!='\0')
-//		p++;
-//	strcpy(p,dirname);
-//	while(*p!='\0') p++;
-//	*p='\\';p++;
-//	*p='\0';
-//
-//	openfilelist[fd].dirno=openfilelist[curfd].first;
-//	openfilelist[fd].diroff=i;
-//	strcpy(openfilelist[fd].exname,pcbtmp->exname);
-//	strcpy(openfilelist[fd].filename,pcbtmp->filename);
-//	openfilelist[fd].fcbstate=1;
-//	openfilelist[fd].first=pcbtmp->first;
-//	openfilelist[fd].length=pcbtmp->length;
-//	openfilelist[fd].free=1;
-//	openfilelist[fd].time=pcbtmp->time;
-//	openfilelist[fd].topenfile=1;
-//
-//	do_write(curfd,(char *)pcbtmp,sizeof(fcb),2);///////////////////////////////////
-//
-//	pcbtmp->attribute=0;
-//	time(now);
-//	nowtime=localtime(now);
-//	pcbtmp->time=nowtime->tm_hour*2048+nowtime->tm_min*32+nowtime->tm_sec/2;
-//	pcbtmp->date=(nowtime->tm_year-80)*512+(nowtime->tm_mon+1)*32+nowtime->tm_mday;
-//	strcpy(pcbtmp->filename,".");
-//	strcpy(pcbtmp->exname,"di");
-//	pcbtmp->first=bknum;
-//	pcbtmp->length=2*sizeof(fcb);
-//
-//	do_write(fd,(char *)pcbtmp,sizeof(fcb),2);////////////////////////////////////
-//
-//	pcbtmp->attribute=0;
-//	time(now);
-//	nowtime=localtime(now);
-//	pcbtmp->time=nowtime->tm_hour*2048+nowtime->tm_min*32+nowtime->tm_sec/2;
-//	pcbtmp->date=(nowtime->tm_year-80)*512+(nowtime->tm_mon+1)*32+nowtime->tm_mday;
-//	strcpy(pcbtmp->filename,"..");
-//	strcpy(pcbtmp->exname,"di");
-//	pcbtmp->first=openfilelist[curfd].first;
-//	pcbtmp->length=openfilelist[curfd].length;
-//
-//	do_write(fd,(char *)pcbtmp,sizeof(fcb),2);
-//
-//	openfilelist[curfd].count=0;
-//	do_read(curfd,openfilelist[curfd].length,text);
-//
-//	pcbtmp=(fcb *)text;
-//	pcbtmp->length=openfilelist[curfd].length;
-//	my_close(fd);
-//
-//	openfilelist[curfd].count=0;
-//	do_write(curfd,text,pcbtmp->length,2);
-//}
 
 
 
