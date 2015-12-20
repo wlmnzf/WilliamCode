@@ -43,7 +43,7 @@ typedef struct USEROPEN
     int dirno;
     int diroff;
     char dir[MAXOPENFILE][80];
-		int count;
+	int count;
     char fcbstate;
     char topenfile;
 
@@ -55,7 +55,7 @@ int curfd;
 
 typedef struct BLOCK0
 {
-    char magicnum[8];
+    char magicnum[9];
 		char information[200];
     unsigned short root;
 		unsigned char *startblock;

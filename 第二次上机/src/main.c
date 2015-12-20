@@ -1,4 +1,6 @@
 #include "fs.h"
+#include "op.h"
+#include "wlm.h"
 main()
 {
    //初始化变量
@@ -70,416 +72,227 @@ main()
 }
 
 
-// void startsys()
-// {
-//   myvhard=(char*)malloc(SIZE);
-//   FILE *fp；
-//   fp=fopen(myfsys,"r");
-//   int res=0;
-//   if(fp!=NULL)
-//   {
-//     unsigned char *buff=(char*)malloc(SIZE);
-//     fread (buff, SIZE,1, fp);
-//     res=strncmp(magicnum,(block0 *)buff->magicnum,8);
-//     //res=strncmp(magicnum,buff,8);
-//     if(res==0)
-//     {
-//       res==1;
-//       strcpy(myfsys,buff);
-//       free(buff);
-//     }
-//   }
-//
-//   if(res==0)
-//     {
-//        printf("myfsys文件系统不存在，现在开始创建文件系统\n");
-//        my_format();
-//        fp=fopen(myfsys,"w+");
-//        fwrite(myvhard,SIZE,1,fp);
-//     }
-//
-//   fclose(fp);
-//   fp=NULL;
-//
-//
-// //初始化各种的东西
-//
-//   strcpy(openfilelist[0].filename,"root");
-//   strcpy(openfilelist[0].exname,exname);
-//   openfilelist[0].attribute=0;
-//   openfilelist[0].time=((fcb *)(myvhard+5*BLOCKSIZE))->time;
-//   openfilelist[0].date=((fcb *)(myvhard+5*BLOCKSIZE))->date;
-//   openfilelist[0].first=((fcb *)(myvhard+5*BLOCKSIZE))->first;
-//   openfilelist[0].length=((fcb *)(myvhard+5*BLOCKSIZE))->length;
-//   openfilelist[0].free=1;
-//   openfilelist[0].dirno=5;
-//   openfilelist[0].diroff=0;
-//   strcpy(openfilelist[0].dir, "/root/");
-//   openfilelist[0].count=0;
-//   openfilelist[0].fcbstate=0;
-//   openfilelist[0].topenfile=1；
-//
-//   memset(currentdir,0,sizeof(currentdir));
-//   strcpy(currentdir,"/root/");
-//   strcpy(openfilelist->dir[0],currentdir);
-//   startp=((block0 *)myvhard)->startblock;
-//   ptrcurdir=&openfilelist[0];
-//
-// }
-//
-void my_format()
-{
-   block0* first_block=(block0*)myvhard;
-   fat *fat1=(fat*)(first_block+BLOCKSIZE);
-   fat *fat2=(fat*)(first_block+3*BLOCKSIZE);
-   unsigned char *data=(unsigned char*)(myvhard+5*BLOCKSIZE);
-   fcb *root=(fcb*)data;
-
-   strcpy(first_block->magicnum,magicnum);
-   strcpy(first_block->information,"William_FS V1.0\nBLOCKSIZE:1024\nBLOCKCOUNT:1000\nAUTHOR:William\n");
-   first_block->root=0;
-   first_block->startblock=data;
-
-   int i=0;
-   fat *tmp1=fat1;
-   fat *tmp2=fat2;
-   for(i=0;i<5;i++)
-   {
-     tmp1->id=END;
-     tmp2->id=END;
-     tmp1++;
-     tmp2++;
-   }
-   int total=SIZE/BLOCKSIZE;
-   for(i=6;i<total;i++)
-   {
-     tmp1->id=FREE;
-     tmp2->id=FREE;
-     tmp1++;
-     tmp2++;
-   }
-
-    (fat1+5)->id=6;
-    (fat2+5)->id=6;
-
-    time_t *now;
-    struct tm *nowtime;
-   	strcpy(root->filename,".");
-   	strcpy(root->exname,exname);
-   	root->attribute=0;
-   	now=(time_t *)malloc(sizeof(time_t));
-   	time(now);
-   	nowtime=localtime(now);
-   	root->time=nowtime->tm_hour*2048+nowtime->tm_min*32+nowtime->tm_sec/2;
-   	root->date=(nowtime->tm_year-80)*512+(nowtime->tm_mon+1)*32+nowtime->tm_mday;
-   	root->first=5;
-   	root->length=2*sizeof(fcb);
-   	root++;
-
-   	strcpy(root->filename,"..");
-   	strcpy(root->exname,exname);
-   	root->attribute=0;
-   	time(now);
-   	nowtime=localtime(now);
-   	root->time=nowtime->tm_hour*2048+nowtime->tm_min*32+nowtime->tm_sec/2;
-   	root->date=(nowtime->tm_year-80)*512+(nowtime->tm_mon+1)*32+nowtime->tm_mday;
-   	root->first=5;
-   	root->length=2*sizeof(fcb);
-   	root++;
-
-   	for(i=2;i<BLOCKSIZE*2/sizeof(fcb);i++,root++)
-   	{
-   		root->filename[0]='\0';
-   	}
-   FILE*	fp=fopen(filename,"w");
-
-   	fwrite(myvhard,SIZE,1,fp);
-   	free(now);
-   	fclose(fp);
-
-}
-
-void startsys()
-{
-	FILE *fp;
-	int i;
-    unsigned char *buffer=(unsigned char*)malloc(SIZE);
-	myvhard=(unsigned char *)malloc(SIZE);
-	memset(myvhard,0,SIZE);
-	fp=fopen(filename,"r");
-	if(fp)
-	{
-		fread(buffer,SIZE,1,fp);
-		fclose(fp);
-		if(buffer[0]!=0xaa||buffer[1]!=0xaa)
-		{
-			printf("myfilesys is not exist,begin to creat the file...\n");
-			my_format();
-		}
-		else
-		{
-			for(i=0;i<SIZE;i++)
-					myvhard[i]=buffer[i];
-		}
-	}
-	else
-	{
-		printf("myfilesys is not exist,begin to creat the file...\n");
-		my_format();
-	}
-
-
-	strcpy(openfilelist[0].filename,"root");
-	strcpy(openfilelist[0].exname,"di");
-	openfilelist[0].attribute=0x2d;
-	openfilelist[0].time=((fcb *)(myvhard+5*BLOCKSIZE))->time;
-	openfilelist[0].date=((fcb *)(myvhard+5*BLOCKSIZE))->date;
-	openfilelist[0].first=((fcb *)(myvhard+5*BLOCKSIZE))->first;
-	openfilelist[0].length=((fcb *)(myvhard+5*BLOCKSIZE))->length;
-	openfilelist[0].free=1;
-	openfilelist[0].dirno=5;
-	openfilelist[0].diroff=0;
-	openfilelist[0].count=0;
-	openfilelist[0].fcbstate=0;
-	openfilelist[0].topenfile=0;
-	openfilelist[0].father=0;
-
-	memset(currentdir,0,sizeof(currentdir));
-	strcpy(currentdir,"\\root\\");
-	strcpy(openfilelist->dir[0],currentdir);
-	startp=((block0 *)myvhard)->startblock;
-	ptrcurdir=&openfilelist[0];
-	curfd=0;
-}
-
-//
-// void my_format()
-// {
-// 	FILE *fp;
-// 	fat *fat1,*fat2;
-// 	block0 *b0;
-// 	time_t *now;
-// 	struct tm *nowtime;
-// 	unsigned char *p;
-// 	fcb *root;
-// 	int i;
-//
-// 	p=myvhard;
-// 	b0=(block0 *)p;
-// 	fat1=(fat *)(p+BLOCKSIZE);
-// 	fat2=(fat*)(p+3*BLOCKSIZE);
-// 	/*
-// 	引导块
-// 	*/
-// 	b0->fbnum=0xaaaa;	/*文件系统魔数 10101010*/
-// 	b0->root = 5;
-// 	strcpy(b0->information,"My FileSystem Ver 1.0 \n Blocksize=1KB Whole size=1000KB Blocknum=1000 RootBlocknum=2\n");
-// 	/*
-// 	FAT1,FAT2
-// 		前面五个磁盘块已分配，标记为END
-// 	*/
-// 	fat1->id=END;
-// 	fat2->id=END;
-// 	fat1++;fat2++;
-// 	fat1->id=END;
-// 	fat2->id=END;
-// 	fat1++;fat2++;
-// 	fat1->id=END;
-// 	fat2->id=END;
-// 	fat1++;fat2++;
-// 	fat1->id=END;
-// 	fat2->id=END;
-// 	fat1++;fat2++;
-// 	fat1->id=END;
-// 	fat2->id=END;
-// 	fat1++;fat2++;
-// 	fat1->id=6;
-// 	fat2->id=6;
-// 	fat1++;fat2++;
-// 	fat1->id=END;
-// 	fat2->id=END;
-// 	fat1++;fat2++;
-// 	/*
-// 	将数据区的标记为空闲状态
-// 	*/
-// 	for(i=7;i<SIZE/BLOCKSIZE;i++)
-// 	{
-// 		(*fat1).id=FREE;
-// 		(*fat2).id=FREE;
-// 		fat1++;
-// 		fat2++;
-// 	}
-//   /*
-// 创建根目录文件root，将数据区的第一块分配给根目录区
-// 在给磁盘上创建两个特殊的目录项：".",".."，
-// 除了文件名之外，其它都相同
-// */
-// p+=BLOCKSIZE*5;
-// root=(fcb *)p;
-// strcpy(root->filename,".");
-// strcpy(root->exname,"di");
-// root->attribute=40;
-// now=(time_t *)malloc(sizeof(time_t));
-// time(now);
-// nowtime=localtime(now);
-// root->time=nowtime->tm_hour*2048+nowtime->tm_min*32+nowtime->tm_sec/2;
-// root->date=(nowtime->tm_year-80)*512+(nowtime->tm_mon+1)*32+nowtime->tm_mday;
-// root->first=5;
-// root->length=2*sizeof(fcb);
-// root++;
-//
-// strcpy(root->filename,"..");
-// strcpy(root->exname,"di");
-// root->attribute=40;
-// time(now);
-// nowtime=localtime(now);
-// root->time=nowtime->tm_hour*2048+nowtime->tm_min*32+nowtime->tm_sec/2;
-// root->date=(nowtime->tm_year-80)*512+(nowtime->tm_mon+1)*32+nowtime->tm_mday;
-// root->first=5;
-// root->length=2*sizeof(fcb);
-// root++;
-//
-// for(i=2;i<BLOCKSIZE*2/sizeof(fcb);i++,root++)
-// {
-//   root->filename[0]='\0';
-// }
-// fp=fopen(filename,"w");
-// b0->startblock=p+BLOCKSIZE*4;
-// fwrite(myvhard,SIZE,1,fp);
-// free(now);
-// fclose(fp);
-//
-// }
-
 
 void my_mkdir(char *dirname)
 {
-	fcb *dirfcb,*pcbtmp;
-	int rbn,i,fd;
-	unsigned short bknum;
-	char text[MAX_TXT_SIZE],*p;
-	time_t *now;
-	struct tm *nowtime;
-	/*
-	将当前的文件信息读到text中
-	rbn 是实际读取的字节数
-	*/
-	openfilelist[curfd].count=0;
-	rbn = do_read(curfd,openfilelist[curfd].length,text);
-	dirfcb=(fcb *)text;
-	/*
-	检测是否有相同的目录名
-	*/
-	for(i=0;i<rbn/sizeof(fcb);i++)
+	char *text=(char *)malloc(BLOCKSIZE);
+	int curfd=find_fd_by_openfile(ptrcurdir->filename,ptrcurdir->exname);
+	if(curfd==-1)  
 	{
-		if(strcmp(dirname,dirfcb->filename)==0)
-		{
-			printf("Error,the dirname is already exist!\n");
-			return;
-		}
-		dirfcb++;
-	}
-
-	/*
-	分配一个空闲的打开文件表项
-	*/
-	dirfcb=(fcb *)text;
-	for(i=0;i<rbn/sizeof(fcb);i++)
-	{
-		if(strcmp(dirfcb->filename,"")==0)
-			break;
-		dirfcb++;
-	}
-	openfilelist[curfd].count=i*sizeof(fcb);
-	fd=findFree();
-	if(fd<0)
-	{
+		printf("找不到当前目录\n"); 
 		return;
-	}
-
-	/*
-	寻找空闲盘块
-	*/
-	bknum = findFree();
-	if(bknum == END )
+	} 
+	openfilelist[curfd].count=0;
+    int res= do_read(curfd,ptrcurdir->length,text);
+    if(res==-1)  
 	{
-		return;
-	}
-
-	pcbtmp=(fcb *)malloc(sizeof(fcb));
-	now=(time_t *)malloc(sizeof(time_t));
-
-	//在当前目录下新建目录项
-	pcbtmp->attribute=0;
-	time(now);
+		printf("读取内容失败，文件已损坏\n"); 
+	    return;
+    } 
+   
+   
+//    int i=0;
+//    for(i=0;i<MAXOPENFILE;i++)
+//    {
+//		if()
+//	}
+ 
+    
+    fcb *first_fcb=(fcb *)text; 
+    fcb *tmp_fcb=first_fcb;
+    
+    
+    int fcbNum=res/sizeof(fcb);
+    for(int i=0;i<fcbNum;i++)
+    {
+       if(strcmp(tmp_fcb->filename,dirname)==0&&strcmp(tmp_fcb->exname,exname)==0)
+          {
+              printf("已存在该文件夹！\n");
+              return;
+          }
+       tmp_fcb++;
+    }
+    
+    
+    int free_fd=findFreeO(); 
+    if(free_fd==-1)
+    {
+    //	printf("打开的文件数超出限制\n"); 
+        return;
+    }
+    openfilelist[curfd].count=i*sizeof(fcb);
+    
+    int free_block=findFree();
+    if(free_block==END) 
+	   return;
+   
+   
+   	time(now);
 	nowtime=localtime(now);
-	pcbtmp->time=nowtime->tm_hour*2048+nowtime->tm_min*32+nowtime->tm_sec/2;
-	pcbtmp->date=(nowtime->tm_year-80)*512+(nowtime->tm_mon+1)*32+nowtime->tm_mday;
-	strcpy(pcbtmp->filename,dirname);
-	strcpy(pcbtmp->exname,"di");
-	pcbtmp->first=bknum;
-	pcbtmp->length=2*sizeof(fcb);
+    fcb *new_fcb=(fcb *)malloc(sizeof(fcb));
+    strcpy(new_fcb->filename,dirname);
+    strcpy(new_fcb->exname,exname);
+    new_fcb->attribute=0;
+	new_fcb->time=nowtime->tm_hour*2048+nowtime->tm_min*32+nowtime->tm_sec/2;
+	new_fcb->date=(nowtime->tm_year-80)*512+(nowtime->tm_mon+1)*32+nowtime->tm_mday;
+	new_fcb->first=free_block;
+	new_fcb->length=2;
+	new_fcb->free =1;
+    
+    strcpy(openfilelist[free_fd].filename,dirname);
+    strcpy(openfilelist[free_fd].exname,exname);
+    openfilelist[free_fd].attribute=0;
+    openfilelist[free_fd].time=nowtime->tm_hour*2048+nowtime->tm_min*32+nowtime->tm_sec/2;
+    openfilelist[free_fd].date=(nowtime->tm_year-80)*512+(nowtime->tm_mon+1)*32+nowtime->tm_mday;
+    openfilelist[free_fd].first=free_block;
+    openfilelist[free_fd].length=2;
+	openfilelist[free_fd].free=1;
+	openfilelist[free_fd].dirno=openfilelist[curfd].first;
+	strcpy(openfilelist[free_fd].dir[free_fd],openfilelist[curfd].dir[curfd]);
+	openfilelist[free_fd].diroff=i;
+	openfilelist[free_fd].count=0;
+	openfilelist[free_fd].fcbstate=1;
+	openfilelist[free_fd].topenfile=1;
+	
+	//openfilelist[free_fd].father=curfd;    
 
-	openfilelist[fd].attribute=pcbtmp->attribute;
-	openfilelist[fd].count=0;
-	openfilelist[fd].date=pcbtmp->date;
-	strcpy(openfilelist[fd].dir[fd],openfilelist[curfd].dir[curfd]);
-
-	p=openfilelist[fd].dir[fd];
-	while(*p!='\0')
-		p++;
-	strcpy(p,dirname);
-	while(*p!='\0') p++;
-	*p='\\';p++;
-	*p='\0';
-
-	openfilelist[fd].dirno=openfilelist[curfd].first;
-	openfilelist[fd].diroff=i;
-	strcpy(openfilelist[fd].exname,pcbtmp->exname);
-	strcpy(openfilelist[fd].filename,pcbtmp->filename);
-	openfilelist[fd].fcbstate=1;
-	openfilelist[fd].first=pcbtmp->first;
-	openfilelist[fd].length=pcbtmp->length;
-	openfilelist[fd].free=1;
-	openfilelist[fd].time=pcbtmp->time;
-	openfilelist[fd].topenfile=1;
-
-	do_write(curfd,(char *)pcbtmp,sizeof(fcb),2);
-
-	pcbtmp->attribute=0;
-	time(now);
-	nowtime=localtime(now);
-	pcbtmp->time=nowtime->tm_hour*2048+nowtime->tm_min*32+nowtime->tm_sec/2;
-	pcbtmp->date=(nowtime->tm_year-80)*512+(nowtime->tm_mon+1)*32+nowtime->tm_mday;
-	strcpy(pcbtmp->filename,".");
-	strcpy(pcbtmp->exname,"di");
-	pcbtmp->first=bknum;
-	pcbtmp->length=2*sizeof(fcb);
-
-	do_write(fd,(char *)pcbtmp,sizeof(fcb),2);
-
-	pcbtmp->attribute=0x28;
-	time(now);
-	nowtime=localtime(now);
-	pcbtmp->time=nowtime->tm_hour*2048+nowtime->tm_min*32+nowtime->tm_sec/2;
-	pcbtmp->date=(nowtime->tm_year-80)*512+(nowtime->tm_mon+1)*32+nowtime->tm_mday;
-	strcpy(pcbtmp->filename,"..");
-	strcpy(pcbtmp->exname,"di");
-	pcbtmp->first=openfilelist[curfd].first;
-	pcbtmp->length=openfilelist[curfd].length;
-
-	do_write(fd,(char *)pcbtmp,sizeof(fcb),2);
-
-	openfilelist[curfd].count=0;
-	do_read(curfd,openfilelist[curfd].length,text);
-
-	pcbtmp=(fcb *)text;
-	pcbtmp->length=openfilelist[curfd].length;
-	my_close(fd);
-
-	openfilelist[curfd].count=0;
-	do_write(curfd,text,pcbtmp->length,2);
 }
+
+//void my_mkdir(char *dirname)
+//{
+//	fcb *dirfcb,*pcbtmp;
+//	int rbn,i,fd;
+//	unsigned short bknum;
+//	char text[MAX_TXT_SIZE],*p;
+//	time_t *now;
+//	struct tm *nowtime;
+//	/*
+//	将当前的文件信息读到text中
+//	rbn 是实际读取的字节数
+//	*/
+//	openfilelist[curfd].count=0;
+//	rbn = do_read(curfd,openfilelist[curfd].length,text);
+//	dirfcb=(fcb *)text;
+//	/*
+//	检测是否有相同的目录名
+//	*/
+//	for(i=0;i<rbn/sizeof(fcb);i++)
+//	{
+//		if(strcmp(dirname,dirfcb->filename)==0)
+//		{
+//			printf("Error,the dirname is already exist!\n");
+//			return;
+//		}
+//		dirfcb++;
+//	}
+//	
+//	
+//
+//
+//	/*
+//	分配一个空闲的打开文件表项
+//	*/
+//	dirfcb=(fcb *)text;
+//	for(i=0;i<rbn/sizeof(fcb);i++)
+//	{
+//		if(strcmp(dirfcb->filename,"")==0)
+//			break;
+//		dirfcb++;
+//	}
+//	openfilelist[curfd].count=i*sizeof(fcb);
+//	fd=findFreeO();
+//	if(fd<0)
+//	{
+//		return;
+//	}
+//
+//	/*
+//	寻找空闲盘块
+//	*/
+//	bknum = findFree();
+//	if(bknum == END )
+//	{
+//		return;
+//	}
+//
+//	pcbtmp=(fcb *)malloc(sizeof(fcb));
+//	now=(time_t *)malloc(sizeof(time_t));
+//
+//	//在当前目录下新建目录项
+//	pcbtmp->attribute=0;
+//	time(now);
+//	nowtime=localtime(now);
+//	pcbtmp->time=nowtime->tm_hour*2048+nowtime->tm_min*32+nowtime->tm_sec/2;
+//	pcbtmp->date=(nowtime->tm_year-80)*512+(nowtime->tm_mon+1)*32+nowtime->tm_mday;
+//	strcpy(pcbtmp->filename,dirname);
+//	strcpy(pcbtmp->exname,"di");
+//	pcbtmp->first=bknum;
+//	pcbtmp->length=2*sizeof(fcb);
+//
+//	openfilelist[fd].attribute=pcbtmp->attribute;
+//	openfilelist[fd].count=0;
+//	openfilelist[fd].date=pcbtmp->date;
+//	strcpy(openfilelist[fd].dir[fd],openfilelist[curfd].dir[curfd]);
+//
+//	p=openfilelist[fd].dir[fd];
+//	while(*p!='\0')
+//		p++;
+//	strcpy(p,dirname);
+//	while(*p!='\0') p++;
+//	*p='\\';p++;
+//	*p='\0';
+//
+//	openfilelist[fd].dirno=openfilelist[curfd].first;
+//	openfilelist[fd].diroff=i;
+//	strcpy(openfilelist[fd].exname,pcbtmp->exname);
+//	strcpy(openfilelist[fd].filename,pcbtmp->filename);
+//	openfilelist[fd].fcbstate=1;
+//	openfilelist[fd].first=pcbtmp->first;
+//	openfilelist[fd].length=pcbtmp->length;
+//	openfilelist[fd].free=1;
+//	openfilelist[fd].time=pcbtmp->time;
+//	openfilelist[fd].topenfile=1;
+//
+//	do_write(curfd,(char *)pcbtmp,sizeof(fcb),2);///////////////////////////////////
+//
+//	pcbtmp->attribute=0;
+//	time(now);
+//	nowtime=localtime(now);
+//	pcbtmp->time=nowtime->tm_hour*2048+nowtime->tm_min*32+nowtime->tm_sec/2;
+//	pcbtmp->date=(nowtime->tm_year-80)*512+(nowtime->tm_mon+1)*32+nowtime->tm_mday;
+//	strcpy(pcbtmp->filename,".");
+//	strcpy(pcbtmp->exname,"di");
+//	pcbtmp->first=bknum;
+//	pcbtmp->length=2*sizeof(fcb);
+//
+//	do_write(fd,(char *)pcbtmp,sizeof(fcb),2);////////////////////////////////////
+//
+//	pcbtmp->attribute=0;
+//	time(now);
+//	nowtime=localtime(now);
+//	pcbtmp->time=nowtime->tm_hour*2048+nowtime->tm_min*32+nowtime->tm_sec/2;
+//	pcbtmp->date=(nowtime->tm_year-80)*512+(nowtime->tm_mon+1)*32+nowtime->tm_mday;
+//	strcpy(pcbtmp->filename,"..");
+//	strcpy(pcbtmp->exname,"di");
+//	pcbtmp->first=openfilelist[curfd].first;
+//	pcbtmp->length=openfilelist[curfd].length;
+//
+//	do_write(fd,(char *)pcbtmp,sizeof(fcb),2);
+//
+//	openfilelist[curfd].count=0;
+//	do_read(curfd,openfilelist[curfd].length,text);
+//
+//	pcbtmp=(fcb *)text;
+//	pcbtmp->length=openfilelist[curfd].length;
+//	my_close(fd);
+//
+//	openfilelist[curfd].count=0;
+//	do_write(curfd,text,pcbtmp->length,2);
+//}
+
+
+
+
 
 
 void my_ls()
@@ -625,7 +438,7 @@ int my_open(char *filename)
 		free(exname);
 	}
 
-	fd=findFree();
+	fd=findFreeO();
 	if(fd==-1)
 	{
 		return -1;
@@ -930,343 +743,5 @@ int my_rm(char *filename)
 	do_write(curfd,text,openfilelist[curfd].length,2);
 }
 
-unsigned short findFree()
-{
-   fat *fat1=(fat *)(myvhard+BLOCKSIZE);
-   fat *fat2=(fat *)(myvhard+3*BLOCKSIZE);
-   int len=SIZE/BLOCKSIZE;
-   int i=0;
-   for(i=6;i<len;i++)
-   {
-      if((fat1+i)->id==FREE)
-      {
-        return i;
-      }
-   }
-   printf("Can't find free FAT!\n ");
-   return END;
-}
-
-int my_write(int fd)
-{
-  if(fd<0||fd>MAXOPENFILE)//||openfilelist[fd].topenfile==0
-  {
-    printf("file are not opened!");
-    return -1;
-  }
-
-  int wstyle=0;
-  while(wstyle<1||wstyle>3)
-  {
-    printf("请选择写入方式：\n");
-    printf("1：截断写；\n2：覆盖写；\n3：追加写\n");
-  }
-  fat* fat1=(fat *)(myvhard+BLOCKSIZE);
-  fat* fat2=(fat *)(myvhard+3*BLOCKSIZE);
-  unsigned short first=openfilelist[fd].first;
-  unsigned long length=openfilelist[fd].length;
-  unsigned char *start=(unsigned char *)(myvhard+first*BLOCKSIZE);
-  unsigned char *del_addr=start;
-  int del_block=first;
-  fat *del_fat=(fat *)(fat2+del_block);
-  int i=0;
-
-  switch(wstyle)
-  {
-    case 1:
-      while (length>0)
-      {
-        if(length>BLOCKSIZE)
-        {
-          del_block=del_fat->id;
-          del_fat->id=END;
-          del_fat=(fat *)(fat2+del_block);
-          for(i=0;i<BLOCKSIZE;i++,del_addr++)
-          {
-              length--;
-              del_addr=0;
-          }
-        }
-        else
-        {
-          del_fat->id=END;
-          for(i=0;i<length;i++,del_addr++)
-          {
-             del_addr=0;
-             length--;
-          }
-        }
-
-      }
-
-      openfilelist[fd].count=0;
-      // openfilelist[fd].length=0;
-      break;
-    case 2:openfilelist[fd].count=0;
-    case 3:openfilelist[fd].count=openfilelist[fd].length;
-    default:wstyle=0;break;
-  }
-
-    char *text=(char*)malloc(BLOCKSIZE);
-    char *tmp_text=(char * )malloc(BLOCKSIZE);
-    memset(text,0,BLOCKSIZE);
-
-    printf("please input write data:\n(end with string 'exit')");
-    while(1)
-    {
-        scanf("%s",tmp_text);
-        if(strcmp(tmp_text,"exit"))
-          {
-              printf("write end!\n");
-          }
-        strcat(text,tmp_text);
-        strcat(text,"\n");
-    }
-
-    int len;
-    if(len=do_write(fd,text,strlen(text),wstyle)<0)
-    {
-      printf("write error,please input write data again!\n");
-    }
-
-    if(openfilelist[fd].count>openfilelist[fd].length)
-    {
-      openfilelist[fd].length=openfilelist[fd].count;
-    }
-    openfilelist[fd].fcbstate=1;
-    return len;
-
-}
-
-int do_write(int fd,char *text,int len,char wstyle)
-{
-    unsigned char *buf=(unsigned char *)malloc(BLOCKSIZE);
-    if(buf==NULL)
-    {
-      printf("initial buf error!\n");
-      return -1;
-    }
-
-    if(fd<0||fd>MAXOPENFILE)
-    {
-      printf("file is not opened!\n");
-      return -1;
-    }
-
-    unsigned short first_block=openfilelist[fd].first;
-    unsigned short first_write_block=first_block;
-    fat *fat1 =(fat *)(myvhard+BLOCKSIZE);
-    fat *fat2 =(fat *)(myvhard+3*BLOCKSIZE);
-    fat *first_fat=fat2+first_block;
-    fat *first_write_fat=first_fat;
-
-    int offset=openfilelist[fd].count;
-
-    while(offset>BLOCKSIZE)
-    {
-       int id;
-       if(first_write_fat->id==END)
-       {
-         id=findFree();
-         if(id==END)
-           return -1;
-
-         first_write_fat->id=id;
-         first_write_block=id;
-         first_write_fat=(fat2+id);
-         first_write_fat->id=END;
-       }
-       else
-       {
-         id=first_write_fat->id;
-         first_write_block=id;
-         first_write_fat=(fat2+id);
-       }
-
-       offset-=BLOCKSIZE;
-    }
-
-    unsigned char *first_write_addr=(unsigned char *)(myvhard+first_write_block*BLOCKSIZE);
-    int real_len=0;
-    while(len>0)
-    {
-      if(wstyle==2||offset>0)
-      {
-        strcpy(buf,first_write_addr);
-      }
-      else
-      {
-        memset(buf,0,BLOCKSIZE);
-      }
-
-      unsigned char *write_addr=first_write_addr;
-      int i=0;
-      if(len>BLOCKSIZE-offset)
-      {
-           for(write_addr=buf+offset,i=0;offset<BLOCKSIZE;i++,write_addr++,offset++,first_write_addr++,len--)
-           {
-             *first_write_addr=*write_addr;
-             if(len>0) 
-                real_len++;
-           }
-           //strcpy(first_write_addr,buf);
-           offset=0;
-           if(len>0)
-            {
-              first_write_block=first_write_fat->id;
-              if(first_write_block==END)
-              {
-                first_write_block=findFree();
-                if(first_write_block==END)
-                  return -1;
-                first_write_fat=fat2+first_write_block;
-                first_write_fat->id=END;
-                first_write_addr=(unsigned char *)(myvhard+first_write_block*BLOCKSIZE);
-
-              }
-              else
-              {
-                first_write_fat=fat2+first_write_block;
-                first_write_addr=(unsigned char *)(myvhard+first_write_block*BLOCKSIZE);
-              }
-            }
-      }
-      else
-      {
-        for(write_addr=buf+offset,i=0;offset<len;i++,write_addr++,offset++,first_write_addr++,len--)
-        {
-          *first_write_addr=*write_addr;
-          if(len>0)
-             real_len++;
-        }
-        offset=0;
-      }
 
 
-
-    }
-
-    free(buf);
-  	if(openfilelist[fd].count>openfilelist[fd].length)
-  	{
-  		openfilelist[fd].length=openfilelist[fd].count;
-  	}
-  	openfilelist[fd].fcbstate=1;
-  	return real_len;
-}
-
-int my_read (int fd, int len)
-{
-     int i=0;
-     unsigned char *text=(unsigned char *)malloc(len);
-     if(fd<0||fd>MAXOPENFILE)//||openfilelist[fd].topenfile==0
-     {
-       printf("file are not opened!");
-       return -1;
-     }
-
-     openfilelist[fd].count=0;
-     int res=do_read(fd,openfilelist[fd].length,text);
-     if(res>=0)
-     {
-       printf("read content：\n %s\n",text);
-     }
-     else
-     {
-       printf("read error!\n");
-     }
-     free(text);
-     return res;
-}
-
-int do_read (int fd, int len,char *text)//我的block都是0开始算的
-{
-
-  if(fd<0||fd>MAXOPENFILE)//||openfilelist[fd].topenfile==0
-  {
-    printf("file are not opened!");
-    return -1;
-  }
-  unsigned char *buf=(unsigned char*)malloc(BLOCKSIZE);
-  unsigned short start=openfilelist[fd].first;
-  unsigned long length=openfilelist[fd].length;
-  unsigned short start_read_block=start;
-  int offset=openfilelist[fd].count;
-
-  fat *fat1=(fat *)(myvhard+BLOCKSIZE);
-  fat *fat2=(fat *)(myvhard+3*BLOCKSIZE);
-  fat *start_fat=fat2+start;
-  fat *start_read_fat=start_fat;
-
-  while(offset>BLOCKSIZE)
-  {
-     offset-=BLOCKSIZE;
-     if(start_read_fat->id==END)
-     {
-       printf("file is wrong\n");
-       return -1;
-     }
-     start_read_block=start_read_fat->id;
-     start_read_fat=(fat *)(fat2+start_read_block);
-  }
-
-  unsigned char *start_addr=myvhard+start*BLOCKSIZE;
-  unsigned char *start_read_addr=myvhard+start_read_block*BLOCKSIZE;
-
-  unsigned char *buff=(unsigned char *)malloc(BLOCKSIZE);
-  strncpy(buff,start_read_addr,BLOCKSIZE);
-
-  int real_len=0;
-  unsigned char *read_offset;
-  while(len>0)
-  {
-       if(BLOCKSIZE-offset > len)
-    		{
-    			for(read_offset=buff+offset;len>0;read_offset++,text++)
-    			{
-    				*text=*read_offset;
-    				len--;
-    				offset++;
-    				openfilelist[fd].count++;
-    			}
-    		}
-    		else
-    		{
-    			for(read_offset=buff+offset;read_offset<buf+BLOCKSIZE;read_offset++,text++)
-    			{
-    				*text=*read_offset;
-    				len--;
-    				openfilelist[fd].count++;
-    			}
-
-    			offset=0;
-
-    			start_read_block=start_read_fat->id;
-    			start_read_fat = fat2+start_read_block;
-    			start_read_addr=(unsigned char *)(myvhard+start_read_block*BLOCKSIZE);
-
-          strncpy(buff,start_read_addr,BLOCKSIZE);
-
-    			// for(i=0;i<BLOCKSIZE;i++)
-    			// {
-    			// 	buff[i]=bkptr[i];
-    			// }
-    		}
-    	}
-    	free(buff);
-    	return real_len;
-  }
-
-
-// }
-
-void my_exitsys()
-{
-  FILE *fp;
-  fp=fopen(myfsys,"w+");
-  fwrite(myvhard,SIZE,1,fp);
-  close(fp);
-  fp=NULL;
-  //还得撤消用户打开文件列表
-  free(myvhard);
-}
