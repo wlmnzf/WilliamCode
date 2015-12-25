@@ -1,3 +1,78 @@
+void startsys()
+ {
+   myvhard=(char*)malloc(SIZE);
+   FILE *fp;
+   fp=fopen(myfsys,"r");
+   int res=0;
+   if(fp!=NULL)
+   {
+     unsigned char *buff=(char*)malloc(SIZE);
+     fread (buff, SIZE,1, fp);
+     //res=strncmp(magicnum,buff,8);
+     if(strcmp(((block0 *)buff)->magic,magicnum)==0)
+     {
+       res=1;
+       strcpy(myfsys,buff);
+       free(buff);
+     }
+   }
+
+   if(res==0)
+     {
+       // printf("myfsys文件系统不存在，现在开始创建文件系统\n");
+        printf("myfsys not exists，creating filesystrm....\n");
+        my_format();
+        fp=fopen(myfsys,"w+");
+        fwrite(myvhard,SIZE,1,fp);
+     }
+
+   fclose(fp);
+   fp=NULL;
+
+
+ //初始化各种的东西
+
+   strcpy(openfilelist[0].filename,"root");
+   strcpy(openfilelist[0].exname,exname);
+   openfilelist[0].attribute=0;
+   openfilelist[0].time=((fcb *)(myvhard+5*BLOCKSIZE))->time;
+   openfilelist[0].date=((fcb *)(myvhard+5*BLOCKSIZE))->date;
+   openfilelist[0].first=((fcb *)(myvhard+5*BLOCKSIZE))->first;
+   openfilelist[0].length=((fcb *)(myvhard+5*BLOCKSIZE))->length;
+   openfilelist[0].free=1;
+   openfilelist[0].dirno=5;
+   openfilelist[0].diroff=0;
+   strcpy(openfilelist[0].dir[0], "\\root\\");
+   openfilelist[0].count=0;
+   openfilelist[0].fcbstate=0;
+   openfilelist[0].topenfile=1;
+
+   memset(currentdir,0,sizeof(currentdir));
+   strcpy(currentdir,"\\root\\");
+   strcpy(openfilelist->dir[0],currentdir);
+   startp=((block0 *)myvhard)->startblock;
+   ptrcurdir=&openfilelist[0];
+
+ }
+
+unsigned short findFree()
+{
+   fat *fat1=(fat *)(myvhard+BLOCKSIZE);
+   fat *fat2=(fat *)(myvhard+3*BLOCKSIZE);
+   int len=SIZE/BLOCKSIZE;
+   int i=0;
+   for(i=6;i<len;i++)
+   {
+      if((fat1+i)->id==FREE)
+      {
+        return i;
+      }
+   }
+   printf("Can't find free FAT!\n ");
+   return END;
+}
+
+
 int my_write(int fd)
 {
   if(fd<0||fd>MAXOPENFILE)//||openfilelist[fd].topenfile==0
@@ -115,7 +190,7 @@ int do_write(int fd,char *text,int len,char wstyle)
 
     while(offset>BLOCKSIZE)
     {
-       int id;
+      unsigned short id;
        if(first_write_fat->id==END)
        {
          id=findFree();
@@ -325,4 +400,18 @@ void my_exitsys()
          my_close(i);
   }
   free(myvhard);
+}
+
+int findFreeO()
+{
+	int i;
+	for(i=0;i<MAX_OPEN_FILE;i++)
+	{
+		if(openfilelist[i].free==0)
+		{
+			return i;
+		}
+	}
+	printf("Error,open too many files!\n");
+	return -1;
 }

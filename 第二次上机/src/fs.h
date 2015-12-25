@@ -12,6 +12,7 @@
 
 #define  MAX_OPEN_FILE    10//
 #define MAX_TXT_SIZE 1000 //
+#define MAXTEXT 1000
 
 typedef struct FCB
 {
@@ -55,10 +56,10 @@ int curfd;
 
 typedef struct BLOCK0
 {
-    char magicnum[9];
-		char information[200];
+    char magic[9];
+    char information[200];
     unsigned short root;
-		unsigned char *startblock;
+    unsigned char *startblock;
 }block0;
 
 
@@ -66,7 +67,7 @@ unsigned char *myvhard;
 char magicnum[9]="10101010";
 char myfsys[100]="myfsys";
 char filename[100]="myfsys";//
-char exname[20]="di";
+char default_exname[20]="";
 useropen openfilelist[MAXOPENFILE];
 useropen *ptrcurdir;
 char currentdir[80];
@@ -74,12 +75,12 @@ unsigned char* startp;
 
 void startsys();
 void my_format();
-int my_cd(char *dirname);
+void my_cd(char *dirname);
 void my_mkdir(char *dirname);
 void my_rmdir(char *dirname);
 void my_ls();
 int my_create(char *filename);
-int my_rm(char *filename);
+void my_rm(char *filename);
 int my_open(char *filename);
 int my_close(int fd);
 int my_write(int fd);
@@ -88,4 +89,12 @@ unsigned short findFree();
 int my_read(int fd,int len);
 int do_read(int fd,int len,char *text);
 void my_exitsys();
+int findFreeO();
+//unsigned short findblock();
 unsigned short findFree();
+//unsigned short findblock();
+
+
+
+//int purcurdir;///
+//int curdir;///
