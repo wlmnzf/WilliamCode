@@ -1,4 +1,153 @@
+int back(char *path)
+{
+   int len=strlen(path);
+   int i=0;
+   for(i=len;i>0;i--)
+   {
+      if(*(path+i)=='>')
+        *(path+i+1)='\0';
+   }
+}
 
+
+void solve_cmd(char *cmd_text)
+{
+	char *cmd;
+	char *param;
+    cmd = strtok(cmd_text," ");
+    param=strtok(NULL," ");
+     
+    if(!strcmp(cmd,"my_format"))
+	    {
+			  my_format();
+			  my_exitsys();
+			  startsys();
+	    }
+    else if(!strcmp(cmd,"my_mkdir"))
+        {
+        	 if(!param)
+        	 {
+			    printf("参数不能为空\n");
+			    return;
+			 }
+              my_mkdir(param);
+        }
+    else if(!strcmp(cmd,"my_rmdir"))
+        {
+     	     if(!param)
+        	 {
+			    printf("参数不能为空\n");
+			     return;
+			 }
+              my_rmdir(param);
+        }
+    else if(!strcmp(cmd,"my_ls"))
+       {
+              my_ls();
+       }
+    else if(!strcmp(cmd,"my_cd"))
+       {
+       	    if(!param)
+        	 {
+			    printf("参数不能为空\n");
+			     return;
+			 }
+              my_cd(param);
+	   }
+    else if(!strcmp(cmd,"my_crete"))
+       {
+       	    if(!param)
+        	 {
+			    printf("参数不能为空\n");
+			     return;
+			 }
+	          my_create(param);
+       }
+    else if(!strcmp(cmd,"my_open"))
+      {
+      	    if(!param)
+        	 {
+			    printf("参数不能为空\n");
+			     return;
+			 }
+	          my_open(param);
+	  }
+    else if(!strcmp(cmd,"my_close"))
+     {
+     	   if(!param)
+        	 {
+			    printf("参数不能为空\n");
+			     return;
+			 }
+			  int tmp_fd=find_fd_by_name(param);
+		      if(tmp_fd==-1)
+		         {
+				     printf("该文件未被打开!\n");
+				 }
+			  else
+				 {
+					 my_close(tmp_fd);
+					 tmp_fd=-1;
+				 }
+	 }
+    else if(!strcmp(cmd,"my_write"))
+     {
+ 	     if(!param)
+        	 {
+			    printf("参数不能为空\n");
+			     return;
+			 }
+          int tmp_fd=find_fd_by_name(param);
+          if(tmp_fd==-1)
+             {
+			    printf("该文件未被打开!\n");
+			 }
+	      else
+			 {
+				 my_write(tmp_fd);
+				 tmp_fd=-1;
+			 }
+	 }
+   else if(!strcmp(cmd,"my_read"))
+     {
+     	   if(!param)
+        	 {
+			    printf("参数不能为空\n");
+			     return;
+			 }
+	       int tmp_fd=find_fd_by_name(param);
+           if(tmp_fd==-1)
+             {
+			    printf("该文件未被打开!\n");
+			 }
+			 else
+			 {
+			 	 int tmp_length;
+ 	             printf("请输入要读取的长度。\n");
+ 	             scanf("%d",&tmp_length);
+				 my_read(tmp_fd,tmp_length);
+				 tmp_fd=-1;
+			 }
+	 } 
+   else if(!strcmp(cmd,"my_rm")) 
+    {
+    	   if(!param)
+        	 {
+			    printf("参数不能为空\n");
+			     return;
+			 }
+           my_rm(param);
+	}  
+   else if(!strcmp(cmd,"my_exitsys"))
+    {
+      	   my_exitsys();
+	}
+	else
+	{
+	   printf("无法找到该命令\n\n");
+	}
+
+}
 
 
 void startsys()

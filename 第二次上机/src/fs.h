@@ -92,6 +92,10 @@ void my_exitsys();
 int findFreeO();
 unsigned short findblock();
 unsigned short findFree();
+
+
+char cmd_head[100]="root>";
+char cmd[100];
 //unsigned short findblock();
 
 

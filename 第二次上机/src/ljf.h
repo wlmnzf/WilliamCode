@@ -110,9 +110,8 @@ void my_cd(char * dirname)
 	{
 		if (curfd)
 		curfd = my_close(curfd); 
-		
-		cmd_head[100]
-		return;
+      back(cmd_head);
+	  return;
 	}
 
 	else if (strcmp(dir, "root") == 0)
