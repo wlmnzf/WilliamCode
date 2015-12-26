@@ -1,37 +1,61 @@
-
 int my_create(char * filename)
 {
-
   char *fname,*exname,text[MAX_TXT_SIZE];
   char father[100];
-  int fd,rbn,i,j;
+  char fathername[100];
+  char file[100];
+  int fd,rbn,i,j,father_fd;
   fcb *filefcb,*fcbtmp;
   time_t *now;
   struct tm *nowtime;
   unsigned short bknum;
   fat *fat1,*fatptr;
-//  if((fd=findfree0())==-1)
-//    return -1;
-//  else openfilelist[fd].free=1;
-//  for (int i = 0; i < sizeof(filename); ++i) {
-//    if(filename[i]=='\\') break;
-//  }
-//  if(i<sizeof(filename)) {
-//    for(i= sizeof(filename);filename[i]!='\\';i--);
-//    for (int j = 0; j < i; ++j) {
-//      father[j]=filename[j];
-//    }
-//    father[i]='\0';
-//    my_open(father);
-//  }
-  bknum=findFree();
+  if((fd=findopenfile())==-1)
+    return -1;
+  else openfilelist[fd].free=1;
+
+  for (i = 0; i < sizeof(filename); ++i) {
+    if(filename[i]=='\\') break;
+  }
+  if(i<sizeof(filename)) {
+    for(i= sizeof(filename);filename[i]!='\\';i--);
+    for (j = 0; j < i; ++j) {
+      father[j]=filename[j];
+    }
+    father[i]='\0';
+    for(i= sizeof(father);father[i]!='\\';i--);
+    i++;
+    for (j = 0; father[i]!='\0'; ++j,++i) {
+      fathername[j]=father[i];
+    }
+    fathername[++j]='\0';
+    for(i=0;i<MAXOPENFILE;i++)
+    {
+      if(strcmp(fathername,openfilelist[i].filename)==0) {father_fd=i;break;}
+    }
+    if(i==MAXOPENFILE)
+      father_fd= my_open(father);
+    if(father_fd==-1) {printf("can't open father dir!\n");return -1;}
+    for(i= sizeof(filename);filename[i]!='\\';i--);
+    i++;
+    for (j = 0; filename[i]!='\0'; ++j,++i) {
+      file[j]=filename[i];
+    }
+    file[++j]='\0';
+  }
+  else{
+    strcpy(file,filename);
+    father_fd=curfd;
+  }
+  bknum=findblock();
   if(bknum==END)
   {
     printf("Sorry,there's no place for you to create a file now,but you are a good guy.");
+    openfilelist[fd].free=0;
     return -1;
   }
   fat1=(fat *)(myvhard+BLOCKSIZE);
-  fname=strtok(filename,".");
+  fname=strtok(file,".");
   exname=strtok(NULL,".");
   if(strcmp(fname,"")==0)
   {
@@ -45,7 +69,7 @@ int my_create(char * filename)
   }
 
   openfilelist[curfd].count=0;
-  rbn=do_read(curfd,openfilelist[curfd].length,text);
+  rbn=do_read(father_fd,openfilelist[father_fd].length,text);
   filefcb=(fcb *)text;
   for(i=0;i<rbn/sizeof(fcb);i++)
   {
@@ -64,7 +88,7 @@ int my_create(char * filename)
       break;
     filefcb++;
   }
-  openfilelist[curfd].count=i*sizeof(fcb);
+  openfilelist[father_fd].count=i*sizeof(fcb);
 
 
   fcbtmp=(fcb *)malloc(sizeof(fcb));
@@ -79,21 +103,34 @@ int my_create(char * filename)
   strcpy(fcbtmp->exname,exname);
   fcbtmp->first=bknum;
   fcbtmp->length=0;
-
-  do_write(curfd,(char *)fcbtmp,sizeof(fcb),2);
+  openfilelist[father_fd].fcbstate=1;
+  do_write(father_fd,(char *)fcbtmp,sizeof(fcb),2);
+  strcpy(openfilelist[fd].filename,fname);
+  strcpy(openfilelist[fd].exname,exname);
+  openfilelist[fd].attribute=1;
+  openfilelist[fd].time=fcbtmp->time;
+  openfilelist[fd].date=fcbtmp->date;
+  openfilelist[fd].length=0;
+  openfilelist[fd].dirno=openfilelist[father_fd].first;
+  openfilelist[fd].diroff=i;
+  openfilelist[fd].count=0;
+  openfilelist[fd].fcbstate=0;
+  openfilelist[fd].topenfile=1;
   free(fcbtmp);
   free(now);
-  openfilelist[curfd].count=0;
-  do_read(curfd,openfilelist[curfd].length,text);
+  openfilelist[father_fd].count=0;
+  openfilelist[father_fd].length+= sizeof(fcb);
+  do_read(father_fd,openfilelist[father_fd].length,text);
   fcbtmp=(fcb *)text;
-  fcbtmp->length=openfilelist[curfd].length;
-  openfilelist[curfd].count=0;
-  do_write(curfd,text,openfilelist[curfd].length,2);
-  openfilelist[curfd].fcbstate=1;
+  fcbtmp->length=openfilelist[father_fd].length;
+  openfilelist[father_fd].count=0;
+  do_write(father_fd,text,openfilelist[father_fd].length,2);
+  openfilelist[father_fd].fcbstate=0;
   fatptr=(fat *)(fat1+bknum);
   fatptr->id=END;
 
 }
+
 void my_rm(char *filename)
 {
     char *fname,*exname;
@@ -147,6 +184,7 @@ void my_rm(char *filename)
     openfilelist[curfd].count=0;
     do_write(curfd,text,openfilelist[curfd].length,2);
 }
+
 
 void my_ls(){
     fcb *fcbptr;

@@ -1,6 +1,5 @@
-
 int my_open(char *filename)
-{   //打开当前目录下名为filename的文件; 
+{ 
 	fcb *fcbptr;
 	char *fname, exname[3], *str, text[MAXTEXT];
 	int rbn, fd, i;
@@ -14,17 +13,14 @@ int my_open(char *filename)
    
 	for (i = 0; i < MAXOPENFILE; i++)
 	{
-		//if (strcmp(openfilelist[i].filename, fname) == 0 && strcmp(openfilelist[i].exname, exname) == 0 && i != ptrcurdir)
-  		if (strcmp(openfilelist[i].filename, fname) == 0 && strcmp(openfilelist[i].exname, exname) == 0 && i != curdir)
+  		if (strcmp(openfilelist[i].filename, fname) == 0 && strcmp(openfilelist[i].exname, exname) == 0 && i != curfd)
 			{
 			printf("出错,该文件已经打开.\n");
 			return -1;
 		}
 	}
-	//openfilelist[ptrcurdir].count = 0;
-	openfilelist[curdir].count = 0;
-//	rbn = do_read(ptrcurdir, openfilelist[ptrcurdir].length, text);
-	rbn = do_read(curdir, openfilelist[curdir].length, text);
+	openfilelist[curfd].count = 0;
+	rbn = do_read(curfd, openfilelist[curfd].length, text);
 	fcbptr = (fcb *)text;//？
 	
 	for (i = 0; i < rbn / sizeof(fcb); i++)
@@ -51,38 +47,21 @@ int my_open(char *filename)
 	openfilelist[fd].first = fcbptr->first;
 	openfilelist[fd].length = fcbptr->length;
 	openfilelist[fd].free = fcbptr->free;
-//	openfilelist[fd].dirno = openfilelist[ptrcurdir].first;
-	openfilelist[fd].dirno = openfilelist[curdir].first;
+	openfilelist[fd].dirno = openfilelist[curfd].first;
 	openfilelist[fd].diroff = i;
 
-	//strcpy(openfilelist[fd].dir, openfilelist[ptrcurdir].dir);
-	strcpy(openfilelist[fd].dir[fd], openfilelist[curdir].dir[curdir]);
-	//strcat(openfilelist[fd].dir, filename);
+	strcpy(openfilelist[fd].dir[fd], openfilelist[curfd].dir[curfd]);
 	strcat(openfilelist[fd].dir[fd], filename);
 	if (fcbptr->attribute & 0)
-	//strcat(openfilelist[fd].dir, "\\");
 	strcat(openfilelist[fd].dir[fd], "\\");
-	//openfilelist[fd].father = ptrcurdir;
-	openfilelist[fd].father = curdir;
+	openfilelist[fd].father = curfd;
 	openfilelist[fd].count = 0;
 	openfilelist[fd].fcbstate = 0; 
 	openfilelist[fd].topenfile = 1; 
 	printf("(directory/file is opened successfully)\n");
 	return fd; 
 }
-/*
-int findopenfile()
-{ // 寻找空的用户打开表项 ; 
-	int i;
-	for (i = 0; i < MAXOPENFILE; i++)
-	{
-		if (openfilelist[i].topenfile == 0)
-			return i;
-	}
-	printf("Error,open too many files!\n");
 
-	return -1;
-}*/
 
 int my_close(int fd)
 {  
@@ -129,35 +108,32 @@ void my_cd(char * dirname)
 		return;  
 	else if (strcmp(dir, "..") == 0)
 	{
-		/*
-if (ptrcurdir)
-			ptrcurdir = my_close(ptrcurdir);  //关闭当前路径,返回值为父路径在打开表的位置; 
-		return;*/
-		if (curdir)
-			curdir = my_close(curdir); 
+		if (curfd)
+		curfd = my_close(curfd); 
+		
+		cmd_head[100]
 		return;
 	}
 
 	else if (strcmp(dir, "root") == 0)
 	{
-	/*
-	while (ptrcurdir)
-			ptrcurdir = my_close(ptrcurdir);  //循环关闭root下的打开文件； 
-		dir = strtok(NULL, "\\");  //剩下的路径；*/
-		while (curdir)
-			curdir = my_close(curdir);  
+		while (curfd)
+		curfd = my_close(curfd);  
 		dir = strtok(NULL, "\\");  
+		strcpy(cmd_head,"root>");
 	}
 	while (dir)
 	{
 		fd = my_open(dir); 
 		if (fd != -1) 
-			//ptrcurdir = fd;   //打开表项序号； 
-			curdir = fd;  
+		{
+			curfd = fd;  
+			strcat(cmd_head,dir);
+			strcat(cmd_head,">");
+		}
 		else
 			return;
 		dir = strtok(NULL, "\\");
 	}
-//	printf("目录跳转完成\n");
    printf("enter this contents now\n");
 }

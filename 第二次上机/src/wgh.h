@@ -63,7 +63,8 @@ void my_format()
 	
     strcpy(root->filename, ".");   	
     strcpy(root->exname, "");
-    root->attribute = 1;			
+    //root->attribute = 1;	
+	root->attribute = 0;		
     root->time = nowtime->tm_hour * 2048 + nowtime->tm_min * 32 + nowtime->tm_sec / 2;
 	root->date = (nowtime->tm_year - 80) * 512 + (nowtime->tm_mon + 1) * 32 + nowtime->tm_mday;
 	root->first = 5;
@@ -101,9 +102,9 @@ void my_mkdir(char *dirname)
     fat1 = (fat *)(myvhard + BLOCKSIZE);
     fat2 = (fat *)(myvhard + 3 * BLOCKSIZE);
 	
-    openfilelist[purcurdir].count = 0;	////?????????
+    openfilelist[curfd].count = 0;
 	
-    rbn = do_read(purcurdir, openfilelist[purcurdir].length, text); 
+    rbn = do_read(curfd, openfilelist[curfd].length, text); 
 	
     fcbptr = (fcb *)text; 
 	
@@ -141,10 +142,16 @@ void my_mkdir(char *dirname)
     fcbptr->time = nowtime->tm_hour * 2048 + nowtime->tm_min * 32 + nowtime->tm_sec / 2;
 	fcbptr->date = (nowtime->tm_year - 80) * 512 + (nowtime->tm_mon + 1) * 32 + nowtime->tm_mday;
 	fcbptr->first = blkno;					
-	fcbptr->length = 2 * sizeof(fcb);
+	fcbptr->length = 2 * sizeof(fcb);//
+	//fcbptr->length = 2;
 	fcbptr->free = 1;							
-	openfilelist[purcurdir].count = i * sizeof(fcb);	
-	do_write(purcurdir, (char *)fcbptr, sizeof(fcb), 2);		
+	openfilelist[curfd].count = i * sizeof(fcb);	
+	int len=do_write(curfd, (char *)fcbptr, sizeof(fcb), 2);
+	openfilelist[curfd].count=0;
+	openfilelist[curfd].length+=sizeof(fcb);
+
+
+  
 
 	fd = my_open(dirname);	
 	if(fd == -1)
@@ -162,6 +169,7 @@ void my_mkdir(char *dirname)
 	fcbptr->first = blkno;
 	fcbptr->length = 2 * sizeof(fcb);
 	fcbptr->free = 1;
+	openfilelist[fd].count=0;
 	do_write(fd, (char *)fcbptr, sizeof(fcb), 2);
 	
 	now = time(NULL);
@@ -174,15 +182,17 @@ void my_mkdir(char *dirname)
 	fcbptr->first = blkno;
 	fcbptr->length = 2 * sizeof(fcb);
 	fcbptr->free = 1;
-	do_write(fd, (char *)fcbptr, sizeof(fcb), 2);
+	openfilelist[fd].count=sizeof(fcb);
+    do_write(fd, (char *)fcbptr, sizeof(fcb), 2);
 	free(fcbptr);
 	my_close(fd);
 
+    //rbn = do_read(curfd, openfilelist[curfd].length, text);
 	fcbptr = (fcb *)text;   					
-	fcbptr->length = openfilelist[purcurdir].length;
-	openfilelist[purcurdir].count = 0;
-	do_write(purcurdir, (char *)fcbptr, sizeof(fcb), 2);    
-    openfilelist[purcurdir].fcbstate = 1;	
+	fcbptr->length = openfilelist[curfd].length;
+	openfilelist[curfd].count = 0;
+	do_write(curfd, (char *)fcbptr, sizeof(fcb), 2);    
+    openfilelist[curfd].fcbstate = 1;	
 }
 
 void my_rmdir(char *dirname)
@@ -201,8 +211,8 @@ void my_rmdir(char *dirname)
 	    printf("Error,can't remove this directory.\n");
 	    return;
 	}
-	openfilelist[curdir].count = 0;
-	rbn = do_read(curdir, openfilelist[curdir].length, text);
+	openfilelist[curfd].count = 0;
+	rbn = do_read(curfd, openfilelist[curfd].length, text);
 	fcbptr = (fcb *)text;
 	for(i = 0; i < rbn / sizeof(fcb); i++)
 	{
@@ -242,9 +252,9 @@ void my_rmdir(char *dirname)
 
     strcpy(fcbptr->filename, "");
     fcbptr->free = 0;
-    openfilelist[curdir].count = i * sizeof(fcb);
-    do_write(curdir, (char *)fcbptr, sizeof(fcb), 2);
-    openfilelist[curdir].fcbstate = 1;	
+    openfilelist[curfd].count = i * sizeof(fcb);
+    do_write(curfd, (char *)fcbptr, sizeof(fcb), 2);
+    openfilelist[curfd].fcbstate = 1;	
 }
 
 
@@ -259,5 +269,3 @@ int findopenfile()
     printf("Error,open too many files!\n");
     return -1;
 }
-
-
