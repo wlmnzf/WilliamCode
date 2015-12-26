@@ -7,18 +7,18 @@ main()
    int buff=0;
    while(buff!=13)
    {
-     printf("1.格式化 my_format\n");
-     printf("2.创建子目录 my_mkdir\n");
-     printf("3.删除子目录 my_rmdir\n");
-     printf("4.显示目录中的内容 my_ls\n");
-     printf("5.更改当前目录 my_cd\n");
+     printf("1.格式化 my_format\n");//---
+     printf("2.创建子目录 my_mkdir\n");//---
+     printf("3.删除子目录 my_rmdir\n");//---
+     printf("4.显示目录中的内容 my_ls\n");//---
+     printf("5.更改当前目录 my_cd\n");//---
      printf("6.创建文件 my_create\n");
      printf("7.打开文件 my_open\n");
      printf("8.关闭文件 my_close\n");
      printf("9.写文件 my_write\n");
      printf("10.读文件 my_read\n");
      printf("11.删除文件 my_rm\n");
-     printf("12.退出文件系统 my_exitsys\n");
+     printf("12.退出文件系统 my_exitsys\n");//---
 
      printf("请输入操作的数字\n");
      scanf("%d",&buff);
@@ -26,9 +26,11 @@ main()
         continue;
 
      char text[100];
+     int tmp_fd=-1;
+     int tmp_length=0;
      switch(buff)
       {
-          case 1:my_format();break;
+          case 1:my_format();my_exitsys();startsys();break;
           case 2:
               printf("请输入文件夹名称");
               scanf("%s",text);
@@ -55,9 +57,53 @@ main()
               scanf("%s",text);
               my_open(text);
               break;
-          // case 8:my_close();break;
-          // case 9:my_write();break;
-          // case 10:my_read();break;
+           case 8:
+             printf("请输入文件名");
+             scanf("%s",text);
+             tmp_fd=find_fd_by_name(text);
+             if(tmp_fd==-1)
+             {
+			    printf("该文件未被打开!\n");
+			    //return;
+			 }
+			 else
+			 {
+				 my_close(tmp_fd);
+				 tmp_fd=-1;
+			 }
+		   break;
+          case 9:
+		     printf("请输入文件名");
+             scanf("%s",text);
+             tmp_fd=find_fd_by_name(text);
+             if(tmp_fd==-1)
+             {
+			    printf("该文件未被打开!\n");
+			    //return;
+			 }
+			 else
+			 {
+				 my_write(tmp_fd);
+				 tmp_fd=-1;
+			 }
+		  break;
+          case 10:
+		  	 printf("请输入文件名");
+             scanf("%s",text);
+             tmp_fd=find_fd_by_name(text);
+             if(tmp_fd==-1)
+             {
+			    printf("该文件未被打开!\n");
+			    //return;
+			 }
+			 else
+			 {
+ 	             printf("请输入要读取的长度。\n");
+ 	             scanf("%d",&tmp_length);
+				 my_read(tmp_fd,tmp_length);
+				 tmp_fd=-1;
+			 }
+		  break;
           case 11:
               printf("请输入文件名");
               scanf("%s",text);
@@ -104,6 +150,7 @@ int my_open(char *filename)
 	
 	for (i = 0; i < rbn / sizeof(fcb); i++)
 	{
+		//printf("%s====%s\n",fcbptr->filename,fname);
 		if (strcmp(fcbptr->filename, fname) == 0 && strcmp(fcbptr->exname, exname) == 0)
 			break;
 		fcbptr++;
@@ -458,7 +505,6 @@ void startsys()
 
 
  //初始化各种的东西
-
    strcpy(openfilelist[0].filename,"root");
    strcpy(openfilelist[0].exname,default_exname);
    openfilelist[0].attribute=0;
@@ -481,6 +527,29 @@ void startsys()
    ptrcurdir=&openfilelist[0];
 
  }
+
+int find_fd_by_name(char *filename)
+{
+   int i=0;
+   char *fname;
+   char *str;
+   char exname[10];
+   
+   fname = strtok(filename, "."); 
+   str = strtok(NULL, "."); 
+
+	if (str)
+		strcpy(exname, str);
+	else
+		strcpy(exname, "");
+		
+   for(i=0;i<MAX_OPEN_FILE;i++)
+   {
+      if(strcmp(openfilelist[i].filename,fname)==0&&strcmp(openfilelist[i].exname,exname)==0)
+         return i;
+   }  
+   return -1;
+}
 
 unsigned short findFree()
 {
@@ -513,6 +582,7 @@ int my_write(int fd)
   {
     printf("请选择写入方式：\n");
     printf("1：截断写；\n2：覆盖写；\n3：追加写\n");
+    scanf("%d",&wstyle);
   }
   fat* fat1=(fat *)(myvhard+BLOCKSIZE);
   fat* fat2=(fat *)(myvhard+3*BLOCKSIZE);
@@ -521,7 +591,7 @@ int my_write(int fd)
   unsigned char *start=(unsigned char *)(myvhard+first*BLOCKSIZE);
   unsigned char *del_addr=start;
   int del_block=first;
-  fat *del_fat=(fat *)(fat2+del_block);
+  fat *del_fat=(fat *)(fat1+del_block);
   int i=0;
 
   switch(wstyle)
@@ -532,13 +602,15 @@ int my_write(int fd)
         if(length>BLOCKSIZE)
         {
           del_block=del_fat->id;
-          del_fat->id=END;
-          del_fat=(fat *)(fat2+del_block);
+          //del_fat->id=END;
+          del_fat->id=FREE;
+          del_fat=(fat *)(fat1+del_block);
           for(i=0;i<BLOCKSIZE;i++,del_addr++)
           {
               length--;
               del_addr=0;
           }
+          del_addr=(unsigned char *)(myvhard+del_block*BLOCKSIZE);
         }
         else
         {
@@ -568,9 +640,10 @@ int my_write(int fd)
     while(1)
     {
         scanf("%s",tmp_text);
-        if(strcmp(tmp_text,"exit"))
+        if(strcmp(tmp_text,"exit")==0)
           {
               printf("write end!\n");
+              break;
           }
         strcat(text,tmp_text);
         strcat(text,"\n");
@@ -600,7 +673,7 @@ int do_write(int fd,char *text,int len,char wstyle)
       return -1;
     }
 
-    if(fd<0||fd>MAXOPENFILE)
+    if(fd<0||fd>=MAXOPENFILE)
     {
       printf("file is not opened!\n");
       return -1;
@@ -610,14 +683,14 @@ int do_write(int fd,char *text,int len,char wstyle)
     unsigned short first_write_block=first_block;
     fat *fat1 =(fat *)(myvhard+BLOCKSIZE);
     fat *fat2 =(fat *)(myvhard+3*BLOCKSIZE);
-    fat *first_fat=fat2+first_block;
+    fat *first_fat=fat1+first_block;
     fat *first_write_fat=first_fat;
 
     int offset=openfilelist[fd].count;
 
     while(offset>BLOCKSIZE)
     {
-      unsigned short id;
+       unsigned short id;
        if(first_write_fat->id==END)
        {
          id=findFree();
@@ -626,74 +699,95 @@ int do_write(int fd,char *text,int len,char wstyle)
 
          first_write_fat->id=id;
          first_write_block=id;
-         first_write_fat=(fat2+id);
+         first_write_fat=(fat1+id);
          first_write_fat->id=END;
        }
        else
        {
          id=first_write_fat->id;
          first_write_block=id;
-         first_write_fat=(fat2+id);
+         first_write_fat=(fat1+id);
        }
 
        offset-=BLOCKSIZE;
     }
 
-    unsigned char *first_write_addr=(unsigned char *)(myvhard+first_write_block*BLOCKSIZE);
+    unsigned char *first_write_addr=(unsigned char *)(myvhard+first_write_block*BLOCKSIZE+offset);
     int real_len=0;
+    int i=0;
+    int text_off=0;
     while(len>0)
     {
-      if(wstyle==2||offset>0)
-      {
-        strcpy(buf,first_write_addr);
-      }
-      else
-      {
-        memset(buf,0,BLOCKSIZE);
-      }
-
-      unsigned char *write_addr=first_write_addr;
-      int i=0;
-      if(len>BLOCKSIZE-offset)
-      {
-           for(write_addr=buf+offset,i=0;offset<BLOCKSIZE;i++,write_addr++,offset++,first_write_addr++,len--)
-           {
-             *first_write_addr=*write_addr;
-             if(len>0) 
-                real_len++;
-           }
-           //strcpy(first_write_addr,buf);
-           offset=0;
-           if(len>0)
-            {
-              first_write_block=first_write_fat->id;
-              if(first_write_block==END)
-              {
-                first_write_block=findFree();
-                if(first_write_block==END)
-                  return -1;
-                first_write_fat=fat2+first_write_block;
-                first_write_fat->id=END;
-                first_write_addr=(unsigned char *)(myvhard+first_write_block*BLOCKSIZE);
-
-              }
-              else
-              {
-                first_write_fat=fat2+first_write_block;
-                first_write_addr=(unsigned char *)(myvhard+first_write_block*BLOCKSIZE);
-              }
-            }
-      }
-      else
-      {
-        for(write_addr=buf+offset,i=0;offset<len;i++,write_addr++,offset++,first_write_addr++,len--)
-        {
-          *first_write_addr=*write_addr;
-          if(len>0)
-             real_len++;
-        }
-        offset=0;
-      }
+	      if(wstyle==2||offset>0)
+	      {
+	        //strcpy(buf,first_write_addr);
+	        for(i=0;i<BLOCKSIZE;i++)
+	        {
+			   *(buf+i)=*(first_write_addr+i); 
+			}
+	      }
+	      else
+	      {
+	        //memset(buf,0,BLOCKSIZE);
+	        for(i=0;i<BLOCKSIZE;i++)
+	        {
+			   //*(buf+i)=*(first_write_addr+i); 
+			   *(buf+i)=0;
+			}
+	      }
+	
+	      unsigned char *write_addr=first_write_addr;
+	      int i=0;
+	     // while(len>0)
+	      //{
+      	  
+      	   	   for(i=0;offset+i<BLOCKSIZE&&text_off<len;text_off++,i++)
+	      	   {
+	      	   	   *(buf+offset+i)=*(text+text_off);
+               }
+	      if(len>BLOCKSIZE-offset)
+	      {
+	      	
+	           for(write_addr=buf+offset,i=0;offset<BLOCKSIZE;i++,write_addr++,offset++,first_write_addr++,len--)
+	           {
+	             *first_write_addr=*write_addr;
+	             if(len>0) 
+	                real_len++;
+	           }
+	           //strcpy(first_write_addr,buf);
+	           offset=0;
+	           if(len>0)
+	            {
+	              first_write_block=first_write_fat->id;
+	              if(first_write_block==END)
+	              {
+	                first_write_block=findFree();
+	                if(first_write_block==END)
+	                  return -1;
+	                first_write_fat=fat2+first_write_block;
+	                first_write_fat->id=END;
+	                first_write_addr=(unsigned char *)(myvhard+first_write_block*BLOCKSIZE);
+	
+	              }
+	              else
+	              {
+	                first_write_fat=fat2+first_write_block;
+	                first_write_addr=(unsigned char *)(myvhard+first_write_block*BLOCKSIZE);
+	              }
+	            }
+	      }
+	      else
+	      {
+	      
+	        for(write_addr=buf+offset,i=0;len>0;i++,write_addr++,offset++,first_write_addr++,len--)
+	        {
+	          *first_write_addr=*write_addr;
+	          if(len>0)
+	             real_len++;
+	        }
+	        offset=0;
+	      }
+     // }
 
 
 
@@ -735,11 +829,15 @@ int my_read (int fd, int len)
 int do_read (int fd, int len,char *text)//我的block都是0开始算的
 {
 
-  if(fd<0||fd>MAXOPENFILE)//||openfilelist[fd].topenfile==0
+  if(fd<0||fd>=MAXOPENFILE)//||openfilelist[fd].topenfile==0
   {
     printf("file are not opened!");
     return -1;
   }
+  
+  if(openfilelist[fd].length<len)
+     len=openfilelist[fd].length;
+  
   unsigned char *buf=(unsigned char*)malloc(BLOCKSIZE);
   //strcpy(buf,"");
   int i=0;
@@ -791,6 +889,7 @@ int do_read (int fd, int len,char *text)//我的block都是0开始算的
     				//offset++;
     				openfilelist[fd].count++;
     				real_len++;
+    			//	printf("%d",real_len); 
     			}
     		}
     		else
@@ -952,7 +1051,7 @@ void my_mkdir(char *dirname)
     fat1 = (fat *)(myvhard + BLOCKSIZE);
     fat2 = (fat *)(myvhard + 3 * BLOCKSIZE);
 	
-    openfilelist[curfd].count = 0;	//////???????
+    openfilelist[curfd].count = 0;
 	
     rbn = do_read(curfd, openfilelist[curfd].length, text); 
 	
@@ -996,55 +1095,12 @@ void my_mkdir(char *dirname)
 	//fcbptr->length = 2;
 	fcbptr->free = 1;							
 	openfilelist[curfd].count = i * sizeof(fcb);	
-	do_write(curfd, (char *)fcbptr, sizeof(fcb), 2);		
+	int len=do_write(curfd, (char *)fcbptr, sizeof(fcb), 2);
+	openfilelist[curfd].count=0;
+	openfilelist[curfd].length+=sizeof(fcb);
 
 
-  //=====new_added============
- /*
- int findFreeO()
-{
-	int i;
-	for(i=0;i<MAX_OPEN_FILE;i++)
-	{
-		if(openfilelist[i].free==0)
-		{
-			return i;
-		}
-	}
-	printf("Error,open too many files!\n");
-	return -1;
-}
-
-
-    int free_fd=findFreeO(); 
-    if(free_fd==-1)
-    {
-    	printf("打开的文件数超出限制\n"); 
-        return;
-    }
   
-  
-    strcpy(openfilelist[free_fd].filename,dirname);
-    strcpy(openfilelist[free_fd].exname,default_exname);
-    openfilelist[free_fd].attribute=0;
-    openfilelist[free_fd].time=nowtime->tm_hour*2048+nowtime->tm_min*32+nowtime->tm_sec/2;
-    openfilelist[free_fd].date=(nowtime->tm_year-80)*512+(nowtime->tm_mon+1)*32+nowtime->tm_mday;
-    openfilelist[free_fd].first= blkno;	
-    openfilelist[free_fd].length=2;
-	openfilelist[free_fd].free=1;
-	openfilelist[free_fd].dirno=openfilelist[curfd].first;
-	strcpy(openfilelist[free_fd].dir[free_fd],openfilelist[curfd].dir[curfd]);
-	strcat(openfilelist[free_fd].dir[free_fd],dirname);
-	strcat(openfilelist[free_fd].dir[free_fd],"\\");
-	openfilelist[free_fd].diroff=i;
-	openfilelist[free_fd].count=0;
-	openfilelist[free_fd].fcbstate=1;
-	openfilelist[free_fd].topenfile=1;
-	
-    openfilelist[curfd].length+=1;
-    openfilelist[curfd].count=(openfilelist[curfd].length-1)*sizeof(fcb);*/
-    
-    //=====new_added===========
 
 	fd = my_open(dirname);	
 	if(fd == -1)
@@ -1062,6 +1118,7 @@ void my_mkdir(char *dirname)
 	fcbptr->first = blkno;
 	fcbptr->length = 2 * sizeof(fcb);
 	fcbptr->free = 1;
+	openfilelist[fd].count=0;
 	do_write(fd, (char *)fcbptr, sizeof(fcb), 2);
 	
 	now = time(NULL);
@@ -1074,10 +1131,12 @@ void my_mkdir(char *dirname)
 	fcbptr->first = blkno;
 	fcbptr->length = 2 * sizeof(fcb);
 	fcbptr->free = 1;
-	do_write(fd, (char *)fcbptr, sizeof(fcb), 2);
+	openfilelist[fd].count=sizeof(fcb);
+    do_write(fd, (char *)fcbptr, sizeof(fcb), 2);
 	free(fcbptr);
 	my_close(fd);
 
+    //rbn = do_read(curfd, openfilelist[curfd].length, text);
 	fcbptr = (fcb *)text;   					
 	fcbptr->length = openfilelist[curfd].length;
 	openfilelist[curfd].count = 0;
